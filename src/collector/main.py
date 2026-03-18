@@ -1,3 +1,4 @@
+import json
 import os
 import requests
 import gspread
@@ -13,7 +14,9 @@ STATE_WORKSHEET = "Sheet1"  # Where the last_id is stored
 
 # --- Google Sheets Setup ---
 scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-creds = Credentials.from_service_account_info(os.getenv("GOOGLE_CREDS_JSON"), scopes=scopes)
+creds_json_string = os.environ.get('GOOGLE_CREDS_JSON')
+creds_info = json.loads(creds_json_string)
+creds = Credentials.from_service_account_info(creds_info, scopes=scopes)
 client = gspread.authorize(creds)
 sheet = client.open_by_key(SHEET_ID).worksheet(STATE_WORKSHEET)
 
@@ -59,6 +62,8 @@ def main():
     highest_id = last_id
 
     for msg in new_messages:
+        print(msg.get('content'))
+        print(msg.get('mention_roles'))
         # Check if the role was actually mentioned
         if ROLE_ID in msg.get("mention_roles", []):
             forward_to_webhook(msg)
