@@ -1,0 +1,1 @@
+script that runs every once in a while to collect hct pings from clord and send them in histcord for verification

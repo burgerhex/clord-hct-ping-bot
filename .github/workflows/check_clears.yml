@@ -1,0 +1,30 @@
+name: Celestecord Hourly Ping Collection
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+
+  workflow_dispatch:
+
+jobs:
+  run_monitor_script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+          cache: 'pip'
+
+      - name: 🛠️ Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: 🚀 Run Collection Script
+        env:
+          PYTHONPATH: src
+          PRIMARY_DISCORD_WEBHOOK_URL: ${{ secrets.PRIMARY_DISCORD_WEBHOOK_URL }}
+        run: python -m collector
