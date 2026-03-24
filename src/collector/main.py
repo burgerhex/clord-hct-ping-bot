@@ -9,6 +9,7 @@ from google.oauth2.service_account import Credentials
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 # Comma-separated list of channel IDs to scan, e.g. "123456,789012"
 CHANNEL_IDS = [c.strip() for c in os.getenv("ACHIEVEMENTS_CHANNEL_IDS", "").split(",") if c.strip()]
+# TODO: support multiple role ids
 ROLE_ID = os.getenv("HARD_CLEARS_ROLE_ID")
 WEBHOOK_URL = os.getenv("TARGET_WEBHOOK_URL")
 SHEET_ID = os.getenv("STATE_SHEET_ID")
@@ -32,7 +33,7 @@ client = gspread.authorize(creds)
 sheet = client.open_by_key(SHEET_ID).worksheet(STATE_WORKSHEET)
 
 
-def _sheets_retry(fn, retries=3, delay=5):
+def _sheets_retry(fn, retries=5, delay=5):
     """
     Call fn(), retrying up to `retries` times on gspread APIError with a 5xx
     status code (transient Google Sheets backend errors).
@@ -338,6 +339,7 @@ def forward_to_webhook(ping_msg: dict, parent_channel_id: str):
 
     # No top-level `content` — the webhook message is embeds only.
     payload = {"embeds": embeds}
+    # TODO: also react with checkmark
     resp = requests.post(WEBHOOK_URL, json=payload)
     if resp.status_code not in (200, 204):
         print(f"  [error] Webhook delivery failed: {resp.status_code} {resp.text}")
@@ -386,6 +388,7 @@ def main():
             parent_channel_id = thread["parent_id"]
             thread_msgs = fetch_thread_messages_after(thread_id, last_id)
             time.sleep(0.05)  # 50ms between thread fetches — safe at scale
+            # TODO: duped code
             for msg in thread_msgs:
                 if ROLE_ID in msg.get("mention_roles", []):
                     print(f"  [thread {thread_id}] Processing message {msg['id']} "
@@ -399,3 +402,8 @@ def main():
 
     update_last_id(highest_id)
     print(f"Done. Forwarded {forwarded}. Last ID: {highest_id}")
+
+    # TODO: add final "jump to backlog" link that links to the earliest unreacted submission in clord-hct-pings.
+    #  read the last x (50? 100?) messages in clord-hct pings. the earliest one with <2 checkmark reacts is the backlog
+    #  start. for any that have >=2 checkmarks and no finish flag react, follow the message link and react to that one
+    #  in clord with a checkmark. then react to this one with a finish flag.
