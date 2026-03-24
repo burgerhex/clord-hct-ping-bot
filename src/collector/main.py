@@ -22,7 +22,7 @@ HEADERS = {"Authorization": f"Bot {DISCORD_TOKEN}"}
 ROLE_DISPLAY_NAME = "`@Hard Clears Team`"
 
 WEBHOOK_DELAY_SECONDS = 1
-MESSAGE_FETCH_LIMIT = 500
+MESSAGE_FETCH_LIMIT = 100
 
 
 # --- Google Sheets Setup ---
