@@ -163,6 +163,7 @@ def resolve_source_message(ping_msg: dict, parent_channel_id: str):
     2. Ping message has a link or attachment — use it directly.
     3. Ping is a reply — if the referenced message has media, use that.
     4. Fallback — use the ping message as-is.
+    # TODO: check if directly previous message has media as a last resort before fallbacks
 
     Returns (source_msg, debug_notes: list[str])
     """
