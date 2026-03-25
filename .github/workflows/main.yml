@@ -26,5 +26,12 @@ jobs:
       - name: 🚀 Run Collection Script
         env:
           PYTHONPATH: src
-          PRIMARY_DISCORD_WEBHOOK_URL: ${{ secrets.PRIMARY_DISCORD_WEBHOOK_URL }}
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          GOOGLE_CREDS_JSON: ${{ secrets.GOOGLE_CREDS_JSON }}
+          TARGET_WEBHOOK_URL: ${{ secrets.TARGET_WEBHOOK_URL }}
+          STATE_SHEET_ID: ${{ secrets.STATE_SHEET_ID }}
+          ACHIEVEMENTS_CHANNEL_IDS: ${{ secrets.ACHIEVEMENTS_CHANNEL_IDS }}
+          TARGET_CHANNEL_ID: ${{ secrets.TARGET_CHANNEL_ID }}
+          HARD_CLEARS_ROLE_IDS: ${{ secrets.HARD_CLEARS_ROLE_IDS }}
+          GUILD_ID: ${{ secrets.GUILD_ID }}
         run: python -m collector
