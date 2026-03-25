@@ -5,7 +5,7 @@ import requests
 import gspread
 from google.oauth2.service_account import Credentials
 
-# --- Configuration (Use GitHub Secrets / .env) ---
+# --- Configuration (Use GitHub Secrets / .env.dev) ---
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 # Comma-separated list of channel IDs to scan, e.g. "123456,789012"
 CHANNEL_IDS = [c.strip() for c in os.getenv("ACHIEVEMENTS_CHANNEL_IDS", "").split(",") if c.strip()]
@@ -17,6 +17,7 @@ GUILD_ID = os.getenv("GUILD_ID")
 STATE_WORKSHEET = "Sheet1"
 
 DISCORD_API = "https://discord.com/api/v10"
+DISCORD_EPOCH = 1420070400000
 HEADERS = {"Authorization": f"Bot {DISCORD_TOKEN}"}
 
 ROLE_DISPLAY_NAME = "`@Hard Clears Team`"
@@ -50,6 +51,7 @@ def _sheets_retry(fn, retries=5, delay=5):
                 time.sleep(delay)
             else:
                 raise
+    return None
 
 
 def get_last_processed_id():
@@ -88,7 +90,7 @@ def fetch_thread_starter(parent_channel_id, thread_id):
     """
     Fetch the channel message that started this thread.
 
-    Discord threads have a `parent_id` (the channel) and the thread's own ID
+    Discord threads have a `parent_id` (the channel), and the thread's own ID
     equals the ID of the message that created it — so we can fetch it directly
     from the parent channel.
     """
@@ -169,7 +171,7 @@ def resolve_source_message(ping_msg: dict, parent_channel_id: str):
     """
     debug = []
 
-    # 1. Ping is inside a thread — source is always the thread-starter message
+    # 1. Ping is inside a thread — the source is always the thread-starter message
     if ping_msg.get("channel_id") != parent_channel_id:
         thread_id = ping_msg["channel_id"]
         debug.append(f"🧵 Ping is inside thread {thread_id} — fetching thread starter as source...")
@@ -219,7 +221,7 @@ def build_embeds(ping_msg: dict, source_msg: dict, debug_notes: list):
     Build a list of Discord embed dicts to send via webhook.
 
     - Primary embed: source message author, content, image, timestamp.
-      Title is the raw jump URL to the source message.
+      The title is the raw jump URL to the source message.
       If the ping message differs from the source, an embed field shows the
       ping message content and a raw link to it.
     - Extra embeds: one per additional image attachment (up to 10 total).
@@ -255,7 +257,6 @@ def build_embeds(ping_msg: dict, source_msg: dict, debug_notes: list):
     ping_url = f"https://discord.com/channels/{guild}/{ping_channel}/{ping_id}"
 
     # Discord snowflake → Unix timestamp for embed footer
-    DISCORD_EPOCH = 1420070400000
     snowflake_ts = (int(src_msg_id) >> 22) + DISCORD_EPOCH
     unix_ts = snowflake_ts // 1000
 
@@ -275,7 +276,7 @@ def build_embeds(ping_msg: dict, source_msg: dict, debug_notes: list):
     if content:
         primary_embed["description"] = content
 
-    # First image attachment goes into the primary embed
+    # The first image attachment goes into the primary embed
     image_attachments = [a for a in attachments if a.get("content_type", "").startswith("image/")]
     other_attachments = [a for a in attachments if not a.get("content_type", "").startswith("image/")]
 
@@ -302,6 +303,7 @@ def build_embeds(ping_msg: dict, source_msg: dict, debug_notes: list):
         })
 
     if fields:
+        # noinspection PyTypeChecker
         primary_embed["fields"] = fields
 
     # If primary embed has no description, make that explicit
@@ -380,7 +382,7 @@ def main():
     # --- Active threads across all configured channels ---
     # One API call fetches threads for the whole guild; we filter to our channels.
     # Pings in archived threads are missed — switch to a persistent bot to catch those.
-    # 50ms sleep between thread message fetches as a rate-limit safety rail.
+    # 50 ms sleep between thread message fetches as a rate-limit safety rail.
     if GUILD_ID:
         threads = fetch_active_threads(GUILD_ID, set(CHANNEL_IDS))
         print(f"Checking {len(threads)} active thread(s) across {len(CHANNEL_IDS)} channel(s)...")
@@ -388,7 +390,7 @@ def main():
             thread_id = thread["id"]
             parent_channel_id = thread["parent_id"]
             thread_msgs = fetch_thread_messages_after(thread_id, last_id)
-            time.sleep(0.05)  # 50ms between thread fetches — safe at scale
+            time.sleep(0.05)  # 50 ms between thread fetches — safe at scale
             # TODO: duped code
             for msg in thread_msgs:
                 if ROLE_ID in msg.get("mention_roles", []):
