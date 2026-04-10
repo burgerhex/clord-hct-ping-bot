@@ -36,13 +36,6 @@ EMOJI_FLAG = "🏁"  # marks fully reviewed forwarding messages
 WEBHOOK_DELAY_SECONDS = 1
 MESSAGE_FETCH_LIMIT = 100
 
-# --- Google Sheets Setup ---
-scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-creds_json = os.getenv("GOOGLE_CREDS_JSON")
-creds = Credentials.from_service_account_info(json.loads(creds_json), scopes=scopes)
-client = gspread.authorize(creds)
-sheet = client.open_by_key(SHEET_ID).worksheet(STATE_WORKSHEET)
-
 
 def _sheets_retry(fn, retries=5, delay=5):
     """Retry fn() up to `retries` times on transient 5xx Google Sheets errors."""
@@ -59,6 +52,14 @@ def _sheets_retry(fn, retries=5, delay=5):
             else:
                 raise
     return None
+
+
+# --- Google Sheets Setup ---
+scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+creds_json = os.getenv("GOOGLE_CREDS_JSON")
+creds = Credentials.from_service_account_info(json.loads(creds_json), scopes=scopes)
+client = gspread.authorize(creds)
+sheet = _sheets_retry(lambda: client.open_by_key(SHEET_ID).worksheet(STATE_WORKSHEET))
 
 
 def get_last_processed_id():
